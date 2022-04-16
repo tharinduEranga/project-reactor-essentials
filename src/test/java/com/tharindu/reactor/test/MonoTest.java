@@ -2,6 +2,7 @@ package com.tharindu.reactor.test;
 
 import lombok.extern.slf4j.Slf4j;
 import org.junit.jupiter.api.Test;
+import org.reactivestreams.Subscription;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
@@ -71,4 +72,42 @@ class MonoTest {
                 .expectError(RuntimeException.class)
                 .verify();
     }
+
+    @Test
+    void monoSubscriberConsumerComplete() {
+        String name = "Tharindu Eranga";
+        Mono<String> mono = Mono.just(name)
+                .log()
+                .map(String::toUpperCase);
+        mono.subscribe(val -> log.info("Value: {}", val), error -> {
+            log.error("Something went wrong!");
+            error.printStackTrace();
+        }, () -> log.info("Finished!")); //finished run after the element publishing is completed/error
+
+        log.info("----------------------");
+
+        StepVerifier.create(mono)
+                .expectNext(name.toUpperCase())
+                .verifyComplete();
+    }
+
+    @Test
+    void monoSubscriberConsumerCompleteSubscription() {
+        String name = "Tharindu Eranga";
+        Mono<String> mono = Mono.just(name)
+                .log()
+                .map(String::toUpperCase);
+        mono.subscribe(val -> log.info("Value: {}", val), error -> {
+                    log.error("Something went wrong!");
+                    error.printStackTrace();
+                }, () -> log.info("Finished!"),
+                Subscription::cancel); //cancelling will stop the source producing any values
+
+        log.info("----------------------");
+
+        StepVerifier.create(mono)
+                .expectNext(name.toUpperCase())
+                .verifyComplete();
+    }
+
 }
