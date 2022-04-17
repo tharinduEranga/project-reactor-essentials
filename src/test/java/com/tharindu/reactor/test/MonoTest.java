@@ -23,6 +23,8 @@ import reactor.test.StepVerifier;
  * */
 @Slf4j
 class MonoTest {
+/*A Mono<T> is a specialized Publisher<T> that emits at most one item
+and then (optionally) terminates with an onComplete signal or an onError signal.*/
 
     @Test
     void monoSubscriber() {
@@ -110,4 +112,27 @@ class MonoTest {
                 .verifyComplete();
     }
 
+    @Test
+    void monoDoOnMethods() {
+        String name = "Tharindu Eranga";
+        Mono<Object> mono = Mono.just(name)
+                .log()
+                .map(String::toUpperCase)
+                .doOnSubscribe(subscription -> log.info("Do on subscribe: {}", subscription))
+                .doOnRequest(longVal -> log.info("Request received, starting to do something."))
+                .doOnNext(val -> log.info("Value is here 1: {}", val)) //executes next if there is a value to emit
+                .flatMap(val -> Mono.empty()) //sets the value in the flow as empty
+                .doOnNext(val -> log.info("Value is here 2: {}", val)) //won't execute
+                .doOnSuccess(subscription -> log.info("Success!")); //executes even there is a value or not to emit
+
+        mono.subscribe(val -> log.info("Subscribed: {}", val), //only runs if there's a value to emit
+                Throwable::printStackTrace,
+                () -> log.info("Finished!")); //finished run after the element publishing is completed/error
+
+        log.info("----------------------");
+
+        StepVerifier.create(mono)
+                .expectComplete()
+                .verify(); //A Mono<T> terminates after an onComplete signal or an onError signal.
+    }
 }
